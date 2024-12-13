@@ -1,0 +1,32 @@
+2. Test Manually Using the CLI
+Since the console doesn't allow testing, you can simulate and test the rule using the AWS CLI.
+
+Step 1: Get the Rule's ARN
+Run the following command to list all rules and identify your specific rule:
+
+bash
+Copy code
+aws events list-rules
+Step 2: Test with a Sample Event
+Create a test event that mimics an S3 event. Save this JSON to a file named test-event.json:
+
+json
+Copy code
+{
+  "source": "aws.s3",
+  "detail-type": "Object Created",
+  "detail": {
+    "bucket": {
+      "name": "your-bucket-name"
+    },
+    "object": {
+      "key": "your-file-name"
+    }
+  }
+}
+Invoke the rule with the CLI:
+
+bash
+Copy code
+aws events test-event-pattern --event '{"source": "aws.s3", "detail-type": "Object Created", "detail": {"bucket": {"name": "your-bucket-name"}, "object": {"key": "your-file-name"}}}' --rule "your-rule-name"
+If it matches the rule, the output will confirm the event matches.
