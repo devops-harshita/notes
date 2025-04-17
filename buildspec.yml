@@ -1,26 +1,27 @@
 version: 0.2
 
-env:
-  secrets-manager:
-    CODECOMMIT_PRIVATE_KEY: /codecommit/private_key  # Replace with Parameter Store or Secrets Manager name
-
 phases:
   install:
     runtime-versions:
       git: 2.x
     commands:
-      - echo "Installing SSH key"
+      - echo "Fetching SSH private key from Parameter Store..."
       - mkdir -p ~/.ssh
-      - echo "$CODECOMMIT_PRIVATE_KEY" | base64 -d > ~/.ssh/id_rsa
+
+      # Retrieve and decode the key
+      - aws ssm get-parameter --name "/codecommit/private_key" --with-decryption --query "Parameter.Value" --output text | base64 -d > ~/.ssh/id_rsa
+
+      # Set permissions
       - chmod 600 ~/.ssh/id_rsa
 
-      # SSH Config
-      - echo "Host git-codecommit.*.amazonaws.com" >> ~/.ssh/config
-      - echo "  User APKAXXXXXXX" >> ~/.ssh/config   # Replace with your SSH Key ID
+      # SSH config
+      - echo "Host git-codecommit.*.amazonaws.com" > ~/.ssh/config
+      - echo "  User APKAXXXXXXX" >> ~/.ssh/config      # Replace with your IAM SSH Key ID
       - echo "  IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
       - echo "  StrictHostKeyChecking no" >> ~/.ssh/config
       - chmod 600 ~/.ssh/config
 
+      # Start SSH agent and add key
       - eval "$(ssh-agent -s)"
       - ssh-add ~/.ssh/id_rsa
 
@@ -28,5 +29,5 @@ phases:
     commands:
       - echo "Testing SSH connection..."
       - ssh -v git-codecommit.us-east-1.amazonaws.com || true
-      - echo "Cloning repo..."
+      - echo "Cloning CodeCommit repo via SSH..."
       - git clone ssh://git-codecommit.us-east-1.amazonaws.com/v1/repos/another-repo
